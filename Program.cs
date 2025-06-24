@@ -52,11 +52,12 @@ lifetime.ApplicationStopping.Register(() =>
     {
         logger.LogInformation("SIGTERM received. Starting graceful shutdown...");
 
-        // Notify clients that the application is shutting down
-        await hubContext.Clients.All.SendAsync("Shutdown", "Shutting down");
-
-        // Wait for 10 seconds
-        await Task.Delay(10000);
+        // Countdown from 10 to 0
+        for (int i = 10; i >= 0; i--)
+        {
+            await hubContext.Clients.All.SendAsync("Countdown", i);
+            await Task.Delay(1000); // Wait for 1 second
+        }
 
         // Notify clients that shutdown is complete
         await hubContext.Clients.All.SendAsync("ShutdownComplete", "Shutdown complete");

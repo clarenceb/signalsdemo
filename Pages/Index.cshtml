@@ -19,9 +19,9 @@
         .withUrl('/shutdownhub')
         .build();
 
-    connection.on('Shutdown', msg => {
+    connection.on('Countdown', seconds => {
         const statusMessage = document.getElementById('statusMessage');
-        statusMessage.textContent = msg;
+        statusMessage.textContent = `Shutting down in ${seconds} seconds...`;
         statusMessage.style.color = 'orange';
         statusMessage.style.fontSize = '2rem'; // Make the text larger
     });
