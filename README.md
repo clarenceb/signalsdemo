@@ -80,7 +80,7 @@ az containerapp up \
     --resource-group my-container-apps \
     --location australiaeast \
     --environment 'my-container-apps' \
-    --image mcr.microsoft.com/k8se/quickstart:latest \
+    --image signalsdemo:1.0.0 \
     --target-port 80 \
     --ingress external \
     --registry-server myregistry.azurecr.io
