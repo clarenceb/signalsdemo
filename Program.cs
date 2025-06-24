@@ -3,13 +3,21 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.SignalR;
+using System.Threading;
+
+using SignalsDemo.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 
+builder.Services.AddSignalR();
+
 var app = builder.Build();
+
+app.MapHub<ShutdownHub>("/shutdownhub");
 
 // Register graceful shutdown logic
 var lifetime = app.Lifetime;
@@ -33,15 +41,28 @@ app.MapStaticAssets();
 app.MapRazorPages()
    .WithStaticAssets();
 
+// Use an async method to handle the ApplicationStopping event
 lifetime.ApplicationStopping.Register(() =>
 {
-    logger.LogInformation("SIGTERM received. Starting graceful shutdown...");
+    var scope = app.Services.CreateScope();
+    var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<ShutdownHub>>();
 
-    // Simulate cleanup work
-    Thread.Sleep(10000); // Replace with real cleanup logic
+    // Run the async logic in a separate task
+    Task.Run(async () =>
+    {
+        logger.LogInformation("SIGTERM received. Starting graceful shutdown...");
 
-    logger.LogInformation("Cleanup complete. Exiting.");
+        // Notify clients that the application is shutting down
+        await hubContext.Clients.All.SendAsync("Shutdown", "Shutting down");
+
+        // Wait for 10 seconds
+        await Task.Delay(10000);
+
+        // Notify clients that shutdown is complete
+        await hubContext.Clients.All.SendAsync("ShutdownComplete", "Shutdown complete");
+
+        logger.LogInformation("Cleanup complete. Exiting.");
+    }).Wait(); // Ensure the task completes before exiting
 });
 
-
-app.Run();
+await app.RunAsync();
